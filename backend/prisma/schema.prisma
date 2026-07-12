@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model drivers {
+  id               Int       @id @default(autoincrement())
+  name             String?   @db.VarChar(100)
+  license_no       String?   @unique(map: "license_no") @db.VarChar(100)
+  license_category String?   @db.VarChar(50)
+  license_expiry   DateTime? @db.Date
+  contact          String?   @db.VarChar(50)
+  safety_score     Float?    @db.Float
+  status           String?   @db.VarChar(50)
+  trips            trips[]
+
+  @@index([id], map: "ix_drivers_id")
+}
+
+model expenses {
+  id                      Int       @id @default(autoincrement())
+  trip_id                 Int?
+  vehicle_id              Int?
+  toll                    Float?    @db.Float
+  other                   Float?    @db.Float
+  maintenance_linked_cost Float?    @db.Float
+  total                   Float?    @db.Float
+  status                  String?   @db.VarChar(50)
+  trips                   trips?    @relation(fields: [trip_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_ibfk_1")
+  vehicles                vehicles? @relation(fields: [vehicle_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_ibfk_2")
+
+  @@index([id], map: "ix_expenses_id")
+  @@index([trip_id], map: "trip_id")
+  @@index([vehicle_id], map: "vehicle_id")
+}
+
+model fuel_logs {
+  id         Int       @id @default(autoincrement())
+  vehicle_id Int?
+  date       DateTime? @db.Date
+  liters     Float?    @db.Float
+  cost       Float?    @db.Float
+  vehicles   vehicles? @relation(fields: [vehicle_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fuel_logs_ibfk_1")
+
+  @@index([id], map: "ix_fuel_logs_id")
+  @@index([vehicle_id], map: "vehicle_id")
+}
+
+model maintenance_logs {
+  id           Int       @id @default(autoincrement())
+  vehicle_id   Int?
+  service_type String?   @db.VarChar(100)
+  cost         Float?    @db.Float
+  date         DateTime? @db.Date
+  status       String?   @db.VarChar(50)
+  vehicles     vehicles? @relation(fields: [vehicle_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "maintenance_logs_ibfk_1")
+
+  @@index([id], map: "ix_maintenance_logs_id")
+  @@index([vehicle_id], map: "vehicle_id")
+}
+
+model settings {
+  id            Int     @id @default(autoincrement())
+  depot_name    String? @db.VarChar(255)
+  currency      String? @db.VarChar(10)
+  distance_unit String? @db.VarChar(10)
+
+  @@index([id], map: "ix_settings_id")
+}
+
+model trips {
+  id                  Int        @id @default(autoincrement())
+  trip_code           String?    @unique(map: "ix_trips_trip_code") @db.VarChar(50)
+  source              String?    @db.VarChar(255)
+  destination         String?    @db.VarChar(255)
+  vehicle_id          Int?
+  driver_id           Int?
+  cargo_weight_kg     Float?     @db.Float
+  planned_distance_km Float?     @db.Float
+  status              String?    @db.VarChar(50)
+  deadline            DateTime?  @db.DateTime(0)
+  final_odometer      Float?     @db.Float
+  fuel_consumed       Float?     @db.Float
+  created_at          DateTime?  @db.DateTime(0)
+  completed_at        DateTime?  @db.DateTime(0)
+  expenses            expenses[]
+  vehicles            vehicles?  @relation(fields: [vehicle_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "trips_ibfk_1")
+  drivers             drivers?   @relation(fields: [driver_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "trips_ibfk_2")
+
+  @@index([driver_id], map: "driver_id")
+  @@index([id], map: "ix_trips_id")
+  @@index([vehicle_id], map: "vehicle_id")
+}
+
+model users {
+  id            Int     @id @default(autoincrement())
+  name          String? @db.VarChar(100)
+  email         String? @unique(map: "ix_users_email") @db.VarChar(100)
+  password_hash String? @db.VarChar(255)
+  role          String? @db.VarChar(50)
+
+  @@index([id], map: "ix_users_id")
+}
+
+model vehicles {
+  id                   Int                @id @default(autoincrement())
+  reg_no               String?            @unique(map: "ix_vehicles_reg_no") @db.VarChar(50)
+  name                 String?            @db.VarChar(100)
+  type                 String?            @db.VarChar(50)
+  max_load_capacity_kg Float?             @db.Float
+  odometer             Float?             @db.Float
+  acquisition_cost     Float?             @db.Float
+  status               String?            @db.VarChar(50)
+  expenses             expenses[]
+  fuel_logs            fuel_logs[]
+  maintenance_logs     maintenance_logs[]
+  trips                trips[]
+
+  @@index([id], map: "ix_vehicles_id")
+}
