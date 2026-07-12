@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TransitOps — Enterprise Fleet Management Dashboard</title>
+    <meta name="description" content="TransitOps real-time fleet management dashboard with role-based access control, KPIs, recent trips, vehicle status telemetry, and multi-dimensional filters.">
+    <link rel="stylesheet" href="index.css">
+    <!-- Local Chart.js library -->
+    <script src="chart.min.js"></script>
+</head>
+<body>
+
+    <!-- AUTHENTICATION SCREEN (Shown when logged out) -->
+    <main class="auth-container" id="authScreen">
+        <div class="auth-wrapper">
+            
+            <div class="auth-hero">
+                <h1>TransitOps Fleet Control & Role-Based Access Engine</h1>
+                <p>
+                    Enterprise role-based authentication and operational command center for real-time fleet assets, driver rosters, trip dispatching, maintenance logs, and financial analytics.
+                </p>
+                <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; color: #94a3b8; font-size: 0.9rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: #38bdf8;">✓</span> Role-Based Access Control (RBAC) enforced dynamically per authenticated session
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: #38bdf8;">✓</span> Enterprise-grade operational security and audit trails
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: #38bdf8;">✓</span> Live database authentication via secure JWT tokens
+                    </div>
+                </div>
+            </div>
+
+            <div class="auth-card glass">
+                <div class="tabs">
+                    <button type="button" class="tab-btn active" id="tabLoginBtn" onclick="switchTab('login')">Sign In</button>
+                    <button type="button" class="tab-btn" id="tabRegisterBtn" onclick="switchTab('register')">Register</button>
+                </div>
+
+                <div id="authAlertError" class="alert alert-error"></div>
+                <div id="authAlertSuccess" class="alert alert-success"></div>
+
+                <!-- LOGIN FORM -->
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="loginEmail">Work Email Address</label>
+                        <input type="email" id="loginEmail" class="form-control" placeholder="e.g. manager@fleetmaster.pro" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password..." required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="loginSubmitBtn">
+                        <span>Authenticate & Open Dashboard</span>
+                        <span>→</span>
+                    </button>
+                </form>
+
+                <!-- REGISTER FORM -->
+                <form id="registerForm" onsubmit="handleRegister(event)" style="display: none;">
+                    <div class="form-group">
+                        <label for="regFullName">Full Name</label>
+                        <input type="text" id="regFullName" class="form-control" placeholder="e.g. Raven K." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="regEmail">Work Email Address</label>
+                        <input type="email" id="regEmail" class="form-control" placeholder="e.g. raven.k@transitops.in" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="regPassword">Secure Password</label>
+                        <input type="password" id="regPassword" class="form-control" placeholder="Minimum 8 characters" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="regRole">System Role</label>
+                        <select id="regRole" class="form-control" required>
+                            <option value="1">Fleet Manager</option>
+                            <option value="2">Driver</option>
+                            <option value="3">Safety Officer</option>
+                            <option value="4">Financial Analyst</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="regSubmitBtn">
+                        <span>Create Account</span>
+                        <span>✓</span>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ============================================================== -->
+    <!-- MAIN DASHBOARD SHELL (Matching exact wireframe layout) -->
+    <!-- ============================================================== -->
+    <div id="dashboardScreen">
+        <div class="app-shell">
+
+            <!-- LEFT SIDEBAR -->
+            <aside class="app-sidebar">
+                <a href="#" class="sidebar-brand">
+                    <div class="brand-icon">🛡️</div>
+                    <span class="sidebar-title">TransitOps</span>
+                </a>
+
+                <nav class="menu-list">
+                    <button type="button" class="menu-item active" onclick="switchSection('dashboard')">
+                        <span class="menu-icon">📊</span>
+                        <span class="sidebar-text">Dashboard</span>
+                    </button>
+                    <button type="button" class="menu-item" onclick="switchSection('fleet')">
+                        <span class="menu-icon">🚚</span>
+                        <span class="sidebar-text">Fleet</span>
+                    </button>
+                    <button type="button" class="menu-item" onclick="switchSection('drivers')">
+                        <span class="menu-icon">🧑‍✈️</span>
+                        <span class="sidebar-text">Drivers</span>
+                    </button>
+                    <button type="button" class="menu-item" onclick="switchSection('trips')">
+                        <span class="menu-icon">🛣️</span>
+                        <span class="sidebar-text">Trips</span>
+                    </button>
+                    <button type="button" class="menu-item" onclick="switchSection('maintenance')">
+                        <span class="menu-icon">🔧</span>
+                        <span class="sidebar-text">Maintenance</span>
+                    </button>
+                    <button type="button" class="menu-item" onclick="switchSection('fuel')">
+                        <span class="menu-icon">⛽</span>
+                        <span class="sidebar-text">Fuel & Expenses</span>
+                    </button>
+                    <button type="button" class="menu-item" onclick="switchSection('analytics')">
+                        <span class="menu-icon">📈</span>
+                        <span class="sidebar-text">Analytics</span>
+                    </button>
+                    <button type="button" class="menu-item" onclick="switchSection('rbac')">
+                        <span class="menu-icon">🛡️</span>
+                        <span class="sidebar-text">RBAC Inspector</span>
+                    </button>
+                    <button type="button" class="menu-item" onclick="switchSection('settings')">
+                        <span class="menu-icon">⚙️</span>
+                        <span class="sidebar-text">Settings</span>
+                    </button>
+                </nav>
+            </aside>
+
+            <!-- MAIN WORKSPACE -->
+            <div class="app-main">
+
+                <!-- TOP HEADER BAR -->
+                <header class="app-header">
+                    <div class="header-search">
+                        <span>🔍</span>
+                        <input type="text" placeholder="Search..." id="topSearchInput">
+                    </div>
+
+                    <div class="header-user-section">
+                        <div class="user-identity">
+                            <div class="user-names" style="text-align: right;">
+                                <span class="user-full-name" id="topUserName">Authenticated User</span>
+                                <span class="user-role-text" id="topUserRole">Role</span>
+                            </div>
+                            <div class="user-avatar" id="topUserAvatar">U</div>
+                        </div>
+
+                        <button type="button" class="btn-header-logout" onclick="handleLogout()">
+                            Sign Out
+                        </button>
+                    </div>
+                </header>
+
+                <!-- MAIN WORKSPACE CONTENT -->
+                <section class="app-content">
+
+                    <!-- ============================================================== -->
+                    <!-- VIEW 1: DASHBOARD VIEW (ACTIVE BY DEFAULT) -->
+                    <!-- ============================================================== -->
+                    <div id="viewDashboard">
+
+                        <!-- FILTERS BAR -->
+                        <div class="filter-section">
+                            <div class="filter-title">FILTERS</div>
+                            <div class="filter-row">
+                                <select id="filterType" class="filter-dropdown" onchange="onFilterChange()">
+                                    <option value="All">Vehicle Type: All</option>
+                                    <option value="Truck">Vehicle Type: Heavy Truck</option>
+                                    <option value="Van">Vehicle Type: Van</option>
+                                    <option value="Car">Vehicle Type: Car</option>
+                                    <option value="Trailer">Vehicle Type: Trailer</option>
+                                    <option value="Bus">Vehicle Type: Bus</option>
+                                </select>
+
+                                <select id="filterStatus" class="filter-dropdown" onchange="onFilterChange()">
+                                    <option value="All">Status: All</option>
+                                    <option value="Available">Status: Available</option>
+                                    <option value="On Trip">Status: On Trip</option>
+                                    <option value="In Shop">Status: In Shop</option>
+                                </select>
+
+                                <select id="filterRegion" class="filter-dropdown" onchange="onFilterChange()">
+                                    <option value="All">Region: All</option>
+                                    <option value="North">Region: North</option>
+                                    <option value="South">Region: South</option>
+                                    <option value="West">Region: West</option>
+                                    <option value="East">Region: East</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 7 HORIZONTAL KPI CARDS ROW (MATCHING WIREFRAME EXACTLY) -->
+                        <div class="kpi-row-grid">
+                            <!-- Card 1 -->
+                            <div class="kpi-box border-blue">
+                                <div class="kpi-box-label">ACTIVE VEHICLES</div>
+                                <div class="kpi-box-value" id="kpiActiveVehicles">53</div>
+                            </div>
+
+                            <!-- Card 2 -->
+                            <div class="kpi-box border-green">
+                                <div class="kpi-box-label">AVAILABLE VEHICLES</div>
+                                <div class="kpi-box-value" id="kpiAvailableVehicles">42</div>
+                            </div>
+
+                            <!-- Card 3 -->
+                            <div class="kpi-box border-orange">
+                                <div class="kpi-box-label">VEHICLES IN MAINTENANCE</div>
+                                <div class="kpi-box-value" id="kpiMaintenanceVehicles">05</div>
+                            </div>
+
+                            <!-- Card 4 -->
+                            <div class="kpi-box border-blue">
+                                <div class="kpi-box-label">ACTIVE TRIPS</div>
+                                <div class="kpi-box-value" id="kpiActiveTrips">18</div>
+                            </div>
+
+                            <!-- Card 5 -->
+                            <div class="kpi-box border-cyan">
+                                <div class="kpi-box-label">PENDING TRIPS</div>
+                                <div class="kpi-box-value" id="kpiPendingTrips">09</div>
+                            </div>
+
+                            <!-- Card 6 -->
+                            <div class="kpi-box border-blue">
+                                <div class="kpi-box-label">DRIVERS ON DUTY</div>
+                                <div class="kpi-box-value" id="kpiDriversOnDuty">26</div>
+                            </div>
+
+                            <!-- Card 7 -->
+                            <div class="kpi-box border-green">
+                                <div class="kpi-box-label">FLEET UTILIZATION</div>
+                                <div class="kpi-box-value" id="kpiFleetUtilization">81%</div>
+                            </div>
+                        </div>
+
+                        <!-- INTERACTIVE FLEET VISUALIZATIONS (DASHBOARD TELEMETRY CHARTS) -->
+                        <div class="dashboard-charts-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                            <div class="panel-card" style="padding: 1.25rem;">
+                                <div class="panel-header" style="margin-bottom: 1rem;">
+                                    <span class="panel-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 800; color: #fff;">
+                                        📊 FLEET READINESS & OPERATIONAL STATUS
+                                    </span>
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">Click slices to filter</span>
+                                </div>
+                                <div style="height: 250px; position: relative;">
+                                    <canvas id="dashboardStatusChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="panel-card" style="padding: 1.25rem;">
+                                <div class="panel-header" style="margin-bottom: 1rem;">
+                                    <span class="panel-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 800; color: #fff;">
+                                        🚚 FLEET ASSET DISTRIBUTION BY VEHICLE TYPE
+                                    </span>
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">Active assets per class</span>
+                                </div>
+                                <div style="height: 250px; position: relative;">
+                                    <canvas id="dashboardTypeChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MAIN SPLIT: RECENT TRIPS TABLE & VEHICLE STATUS BARS -->
+                        <div class="dashboard-split">
+
+                            <!-- LEFT COLUMN: RECENT TRIPS TABLE -->
+                            <div class="panel-card">
+                                <div class="panel-header">
+                                    <span class="panel-title">RECENT TRIPS</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>TRIP</th>
+                                                <th>VEHICLE</th>
+                                                <th>DRIVER</th>
+                                                <th>STATUS</th>
+                                                <th>ETA</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recentTripsTableBody">
+                                            <tr>
+                                                <td>TR001</td>
+                                                <td>VAN-05</td>
+                                                <td>Alex</td>
+                                                <td><span class="status-pill pill-ontrip">On Trip</span></td>
+                                                <td>45 min</td>
+                                            </tr>
+                                            <tr>
+                                                <td>TR002</td>
+                                                <td>TRK-12</td>
+                                                <td>John</td>
+                                                <td><span class="status-pill pill-completed">Completed</span></td>
+                                                <td>—</td>
+                                            </tr>
+                                            <tr>
+                                                <td>TR003</td>
+                                                <td>MINI-08</td>
+                                                <td>Priya</td>
+                                                <td><span class="status-pill pill-dispatched">Dispatched</span></td>
+                                                <td>In 10m</td>
+                                            </tr>
+                                            <tr>
+                                                <td>TR004</td>
+                                                <td>—</td>
+                                                <td>—</td>
+                                                <td><span class="status-pill pill-draft">Draft</span></td>
+                                                <td>Awaiting vehicle</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- RIGHT COLUMN: VEHICLE STATUS PROGRESS BARS -->
+                            <div class="panel-card">
+                                <div class="panel-header">
+                                    <span class="panel-title">VEHICLE STATUS</span>
+                                </div>
+                                <div class="status-bars-list">
+                                    <!-- Available -->
+                                    <div class="status-bar-item">
+                                        <div class="status-bar-header">
+                                            <span>Available</span>
+                                            <span id="statAvailableVal">42</span>
+                                        </div>
+                                        <div class="bar-track">
+                                            <div class="bar-fill fill-green" id="barAvailable" style="width: 79%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- On Trip -->
+                                    <div class="status-bar-item">
+                                        <div class="status-bar-header">
+                                            <span>On Trip</span>
+                                            <span id="statOnTripVal">53</span>
+                                        </div>
+                                        <div class="bar-track">
+                                            <div class="bar-fill fill-blue" id="barOnTrip" style="width: 53%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- In Shop -->
+                                    <div class="status-bar-item">
+                                        <div class="status-bar-header">
+                                            <span>In Shop</span>
+                                            <span id="statInShopVal">05</span>
+                                        </div>
+                                        <div class="bar-track">
+                                            <div class="bar-fill fill-orange" id="barInShop" style="width: 15%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Retired -->
+                                    <div class="status-bar-item">
+                                        <div class="status-bar-header">
+                                            <span>Retired</span>
+                                            <span id="statRetiredVal">02</span>
+                                        </div>
+                                        <div class="bar-track">
+                                            <div class="bar-fill fill-red" id="barRetired" style="width: 5%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ============================================================== -->
+                    <!-- OTHER SECTION VIEWS -->
+                    <!-- ============================================================== -->
+                    <!-- ============================================================== -->
+                    <!-- VIEW 4: VEHICLE REGISTRY (MODULE 3.3 CRUD) -->
+                    <!-- ============================================================== -->
+                    <div id="viewFleet" style="display: none;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 1.6rem; font-weight: 800; color: #fff;">Vehicle Assets Registry</h2>
+                            <p style="color: var(--text-muted); font-size: 0.95rem;">Master list of fleet vehicles with real-time telemetry, load capacities, odometer readings, and operational status.</p>
+                        </div>
+
+                        <div class="crud-header-bar">
+                            <div class="crud-filter-group">
+                                <input type="text" id="vehicleSearchInput" class="crud-search-input" placeholder="🔍 Search Reg No. or Model..." oninput="filterVehicles()">
+                                <select id="vehicleTypeFilter" class="crud-search-input" style="min-width: 140px;" onchange="filterVehicles()">
+                                    <option value="All">All Types</option>
+                                    <option value="Truck">Truck</option>
+                                    <option value="Van">Van</option>
+                                    <option value="Car">Car</option>
+                                    <option value="Trailer">Trailer</option>
+                                    <option value="Bus">Bus</option>
+                                </select>
+                                <select id="vehicleStatusFilter" class="crud-search-input" style="min-width: 140px;" onchange="filterVehicles()">
+                                    <option value="All">All Statuses</option>
+                                    <option value="Available">Available</option>
+                                    <option value="On Trip">On Trip</option>
+                                    <option value="In Shop">In Shop</option>
+                                    <option value="Retired">Retired</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn-crud-add" onclick="openVehicleModal()">
+                                <span>+ Register New Vehicle</span>
+                            </button>
+                        </div>
+
+                        <div class="crud-table-card">
+                            <table class="crud-table">
+                                <thead>
+                                    <tr>
+                                        <th>REGISTRATION NO.</th>
+                                        <th>VEHICLE MODEL</th>
+                                        <th>TYPE</th>
+                                        <th>MAX CAPACITY</th>
+                                        <th>ODOMETER</th>
+                                        <th>ACQUISITION COST</th>
+                                        <th>STATUS</th>
+                                        <th>ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vehiclesTableBody">
+                                    <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading vehicle registry...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================== -->
+                    <!-- VIEW 5: DRIVERS & CREW REGISTRY CRUD (MODULE 3.4) -->
+                    <!-- ============================================================== -->
+                    <div id="viewDrivers" style="display: none;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 1.6rem; font-weight: 800; color: #fff;">Drivers & Crew Roster</h2>
+                            <p style="color: var(--text-muted); font-size: 0.95rem;">Master list of authorized fleet drivers with commercial licenses, safety ratings, contact numbers, and duty status.</p>
+                        </div>
+
+                        <!-- 4 DRIVER ROSTER EXECUTIVE KPI BADGES GRID -->
+                        <div class="driver-kpi-badge-grid">
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Total Drivers</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #818cf8;">👨‍✈️</div>
+                                </div>
+                                <div class="driver-kpi-val" id="drKpiTotal">0</div>
+                                <div class="driver-kpi-sub">Active & registered drivers</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Available On Duty</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #10b981;">🟢</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #10b981;" id="drKpiAvailable">0</div>
+                                <div class="driver-kpi-sub">Ready for immediate dispatch</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Active On Trip</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #6366f1;">🚚</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #818cf8;" id="drKpiOnTrip">0</div>
+                                <div class="driver-kpi-sub">Currently hauling cargo</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Avg Safety Score</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #06b6d4;">🛡️</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #06b6d4;" id="drKpiAvgScore">100.0%</div>
+                                <div class="driver-kpi-sub">Fleet telematics mean rating</div>
+                            </div>
+                        </div>
+
+                        <div class="crud-header-bar">
+                            <div class="crud-filter-group">
+                                <input type="text" id="driverSearchInput" class="crud-search-input" placeholder="🔍 Search Driver Name or License..." oninput="filterDrivers()">
+                                <select id="driverCategoryFilter" class="crud-search-input" style="min-width: 170px;" onchange="filterDrivers()">
+                                    <option value="All">All Categories</option>
+                                    <option value="Heavy Commercial (HMV)">Heavy Commercial (HMV)</option>
+                                    <option value="Light Commercial (LMV)">Light Commercial (LMV)</option>
+                                    <option value="Passenger Bus (PSV)">Passenger Bus (PSV)</option>
+                                </select>
+                                <select id="driverStatusFilter" class="crud-search-input" style="min-width: 140px;" onchange="filterDrivers()">
+                                    <option value="All">All Statuses</option>
+                                    <option value="Available">Available</option>
+                                    <option value="On Trip">On Trip</option>
+                                    <option value="Off Duty">Off Duty</option>
+                                    <option value="Suspended">Suspended</option>
+                                </select>
+                                <div class="view-toggle-group">
+                                    <button type="button" id="btnDriverGridToggle" class="btn-view-toggle active" onclick="switchDriverViewMode('grid')">📇 Badges Grid</button>
+                                    <button type="button" id="btnDriverTableToggle" class="btn-view-toggle" onclick="switchDriverViewMode('table')">📋 Table View</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-crud-add" onclick="openDriverModal()">
+                                <span>+ Register New Driver</span>
+                            </button>
+                        </div>
+
+                        <!-- BADGES GRID VIEW CONTAINER (DEFAULT) -->
+                        <div id="driverCardsContainer" class="driver-cards-grid"></div>
+
+                        <!-- TABLE VIEW CONTAINER -->
+                        <div id="driverTableContainer" class="crud-table-card" style="display: none;">
+                            <table class="crud-table">
+                                <thead>
+                                    <tr>
+                                        <th>DRIVER NAME</th>
+                                        <th>LICENSE NO.</th>
+                                        <th>CATEGORY</th>
+                                        <th>CONTACT NUMBER</th>
+                                        <th>EXPIRY DATE</th>
+                                        <th>SAFETY SCORE</th>
+                                        <th>STATUS</th>
+                                        <th>ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="driversTableBody">
+                                    <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading driver registry...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================== -->
+                    <!-- VIEW 6: DISPATCH & TRIPS CONTROL (MODULE 3.5) -->
+                    <!-- ============================================================== -->
+                    <div id="viewTrips" style="display: none;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 1.6rem; font-weight: 800; color: #fff;">Dispatch & Freight Trips Control</h2>
+                            <p style="color: var(--text-muted); font-size: 0.95rem;">Manage freight dispatch, lock available fleet vehicles and drivers, monitor cargo weights, and control trip lifecycle transitions.</p>
+                        </div>
+
+                        <!-- 4 TRIP DISPATCH EXECUTIVE KPI BADGES GRID -->
+                        <div class="driver-kpi-badge-grid">
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Total Freight Trips</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #818cf8;">📦</div>
+                                </div>
+                                <div class="driver-kpi-val" id="trKpiTotal">0</div>
+                                <div class="driver-kpi-sub">All logged dispatch orders</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Active Dispatched</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #6366f1;">🚛</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #818cf8;" id="trKpiDispatched">0</div>
+                                <div class="driver-kpi-sub">Vehicles currently on route</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Completed Trips</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #10b981;">🏁</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #10b981;" id="trKpiCompleted">0</div>
+                                <div class="driver-kpi-sub">Successfully delivered cargo</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Total Freight Hauling</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #06b6d4;">⚖️</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #06b6d4;" id="trKpiCargo">0 KG</div>
+                                <div class="driver-kpi-sub">Cumulative cargo payload</div>
+                            </div>
+                        </div>
+
+                        <div class="crud-header-bar">
+                            <div class="crud-filter-group">
+                                <input type="text" id="tripSearchInput" class="crud-search-input" placeholder="🔍 Search Source, Destination, Vehicle..." oninput="filterTrips()">
+                                <select id="tripStatusFilter" class="crud-search-input" style="min-width: 150px;" onchange="filterTrips()">
+                                    <option value="All">All Lifecycle States</option>
+                                    <option value="Draft">Draft</option>
+                                    <option value="Dispatched">Dispatched</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                </select>
+                                <div class="view-toggle-group">
+                                    <button type="button" id="btnTripGridToggle" class="btn-view-toggle active" onclick="switchTripViewMode('grid')">📇 Dispatch Cards</button>
+                                    <button type="button" id="btnTripTableToggle" class="btn-view-toggle" onclick="switchTripViewMode('table')">📋 Trip Log Table</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-crud-add" onclick="openTripModal()">
+                                <span>+ Create Freight Trip</span>
+                            </button>
+                        </div>
+
+                        <!-- DISPATCH CARDS GRID VIEW CONTAINER (DEFAULT) -->
+                        <div id="tripCardsContainer" class="driver-cards-grid"></div>
+
+                        <!-- TRIP LOG TABLE VIEW CONTAINER -->
+                        <div id="tripTableContainer" class="crud-table-card" style="display: none;">
+                            <table class="crud-table">
+                                <thead>
+                                    <tr>
+                                        <th>TRIP ID</th>
+                                        <th>ROUTE (SOURCE ➔ DEST)</th>
+                                        <th>VEHICLE</th>
+                                        <th>DRIVER</th>
+                                        <th>CARGO (KG)</th>
+                                        <th>DISTANCE</th>
+                                        <th>LIFECYCLE STATUS</th>
+                                        <th>ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tripsTableBody">
+                                    <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading freight trips...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================== -->
+                    <!-- VIEW 7: MAINTENANCE & SHOP QUEUE CONTROL (MODULE 3.6) -->
+                    <!-- ============================================================== -->
+                    <div id="viewMaintenance" style="display: none;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 1.6rem; font-weight: 800; color: #fff;">Maintenance & Shop Queue Control</h2>
+                            <p style="color: var(--text-muted); font-size: 0.95rem;">Log vehicle service orders, track maintenance expenditure, and automatically lock vehicles In Shop to exclude them from dispatch.</p>
+                        </div>
+
+                        <!-- 4 SHOP EXECUTIVE KPI BADGES GRID -->
+                        <div class="driver-kpi-badge-grid">
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Total Work Orders</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #818cf8;">🔧</div>
+                                </div>
+                                <div class="driver-kpi-val" id="mKpiTotal">0</div>
+                                <div class="driver-kpi-sub">All service & repair logs</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Active In Shop</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #f59e0b;">🏗️</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #f59e0b;" id="mKpiInShop">0</div>
+                                <div class="driver-kpi-sub">Vehicles locked from dispatch</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Completed Services</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #10b981;">✅</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #10b981;" id="mKpiCompleted">0</div>
+                                <div class="driver-kpi-sub">Restored to Available pool</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Total Repair Cost</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #f43f5e;">💰</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #f43f5e;" id="mKpiCost">$0</div>
+                                <div class="driver-kpi-sub" id="mKpiAvg">Avg: $0 per service</div>
+                            </div>
+                        </div>
+
+                        <div class="crud-header-bar">
+                            <div class="crud-filter-group">
+                                <input type="text" id="maintSearchInput" class="crud-search-input" placeholder="🔍 Search Vehicle, Service Type, Details..." oninput="filterMaintenance()">
+                                <select id="maintStatusFilter" class="crud-search-input" style="min-width: 150px;" onchange="filterMaintenance()">
+                                    <option value="All">All Lifecycle States</option>
+                                    <option value="In Progress">Active In Shop</option>
+                                    <option value="Completed">Completed Services</option>
+                                </select>
+                                <div class="view-toggle-group">
+                                    <button type="button" id="btnMaintGridToggle" class="btn-view-toggle active" onclick="switchMaintViewMode('grid')">📇 Shop Work Orders</button>
+                                    <button type="button" id="btnMaintTableToggle" class="btn-view-toggle" onclick="switchMaintViewMode('table')">📋 Maintenance Log Table</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-crud-add" onclick="openMaintenanceModal()">
+                                <span>+ Log Maintenance & Move to Shop</span>
+                            </button>
+                        </div>
+
+                        <!-- SHOP WORK ORDER CARDS GRID VIEW CONTAINER (DEFAULT) -->
+                        <div id="maintCardsContainer" class="driver-cards-grid"></div>
+
+                        <!-- MAINTENANCE LOG TABLE VIEW CONTAINER -->
+                        <div id="maintTableContainer" class="crud-table-card" style="display: none;">
+                            <table class="crud-table">
+                                <thead>
+                                    <tr>
+                                        <th>ORDER ID</th>
+                                        <th>VEHICLE REG</th>
+                                        <th>SERVICE TYPE</th>
+                                        <th>DESCRIPTION</th>
+                                        <th>SERVICE DATE</th>
+                                        <th>COST ($)</th>
+                                        <th>STATUS</th>
+                                        <th>ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="maintTableBody">
+                                    <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading maintenance records...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================== -->
+                    <!-- VIEW 8: FUEL & EXPENSE MANAGEMENT & OPERATIONAL COST ENGINE (MODULE 3.7) -->
+                    <!-- ============================================================== -->
+                    <div id="viewFuel" style="display: none;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 1.6rem; font-weight: 800; color: #fff;">Fuel & Expense Management & Total Operational Costs</h2>
+                            <p style="color: var(--text-muted); font-size: 0.95rem;">Record fuel receipts, tolls, and operating expenses, and automatically compute combined Total Operational Cost (Fuel + Maintenance) per vehicle.</p>
+                        </div>
+
+                        <!-- 4 EXECUTIVE FINANCIAL KPI BADGES -->
+                        <div class="driver-kpi-badge-grid">
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Total Fleet Operational Cost</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #f43f5e;">💎</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #f43f5e;" id="fKpiTotalOp">$0</div>
+                                <div class="driver-kpi-sub">Fuel + Maintenance combined</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Fuel & General Expenses</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #38bdf8;">⛽</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #38bdf8;" id="fKpiFuelCost">$0</div>
+                                <div class="driver-kpi-sub">Refueling, tolls & permits</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Total Fuel Consumed</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #10b981;">🛢️</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #10b981;" id="fKpiLiters">0 L</div>
+                                <div class="driver-kpi-sub">Liters across fleet</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Shop Maintenance Cost</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #f59e0b;">🔧</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #f59e0b;" id="fKpiMaintCost">$0</div>
+                                <div class="driver-kpi-sub">Auto-merged from Shop logs</div>
+                            </div>
+                        </div>
+
+                        <div class="crud-header-bar">
+                            <div class="crud-filter-group">
+                                <input type="text" id="fuelSearchInput" class="crud-search-input" placeholder="🔍 Search Vehicle, Expense Notes..." oninput="filterFuelLogs()">
+                                <select id="fuelTypeFilter" class="crud-search-input" style="min-width: 170px;" onchange="filterFuelLogs()">
+                                    <option value="All">All Expense Categories</option>
+                                    <option value="Fuel">Fuel Only</option>
+                                    <option value="Toll & Highway Fees">Tolls & Highway</option>
+                                    <option value="Parking & Yard Fees">Parking & Yard Fees</option>
+                                    <option value="Permit & Regulatory">Permits & Regulatory</option>
+                                </select>
+                                <div class="view-toggle-group">
+                                    <button type="button" id="btnFuelLogsToggle" class="btn-view-toggle active" onclick="switchFuelTab('logs')">⛽ Fuel & Expense Logs</button>
+                                    <button type="button" id="btnFuelOpCostToggle" class="btn-view-toggle" onclick="switchFuelTab('opcost')">📊 Per-Vehicle Total Operational Cost</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-crud-add" onclick="openFuelModal()">
+                                <span>+ Log Fuel / Expense</span>
+                            </button>
+                        </div>
+
+                        <!-- TAB 1: FUEL & EXPENSE TRANSACTION LOGS -->
+                        <div id="fuelLogsContainer">
+                            <div id="fuelCardsGrid" class="driver-cards-grid"></div>
+
+                            <div class="crud-table-card" style="margin-top: 1.5rem;">
+                                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); font-weight: 700; color: #fff;">
+                                    📋 Recent Expense Transaction Log
+                                </div>
+                                <table class="crud-table">
+                                    <thead>
+                                        <tr>
+                                            <th>LOG ID</th>
+                                            <th>VEHICLE REG</th>
+                                            <th>EXPENSE TYPE</th>
+                                            <th>LITERS</th>
+                                            <th>COST ($)</th>
+                                            <th>DATE</th>
+                                            <th>NOTES</th>
+                                            <th>ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fuelTableBody">
+                                        <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading fuel & expense logs...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: PER-VEHICLE OPERATIONAL COST BREAKDOWN -->
+                        <div id="operationalCostContainer" style="display: none;">
+                            <div style="margin-bottom: 1rem; color: #94a3b8; font-size: 0.9rem;">
+                                ✨ Automatically combining <strong>Fuel & General Expenses</strong> with <strong>Shop Maintenance Records</strong> to determine true per-vehicle operational cost.
+                            </div>
+                            <div id="opCostCardsGrid" class="driver-cards-grid"></div>
+
+                            <div class="crud-table-card" style="margin-top: 1.5rem;">
+                                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); font-weight: 700; color: #fff;">
+                                    📊 Consolidated Vehicle Operational Cost Summary
+                                </div>
+                                <table class="crud-table">
+                                    <thead>
+                                        <tr>
+                                            <th>VEHICLE REG</th>
+                                            <th>MODEL & TYPE</th>
+                                            <th>ODOMETER (KM)</th>
+                                            <th>FUEL COST ($)</th>
+                                            <th>OTHER EXPENSES ($)</th>
+                                            <th>MAINTENANCE ($)</th>
+                                            <th>TOTAL OPERATIONAL COST ($)</th>
+                                            <th>EFFICIENCY ($/KM)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="opCostTableBody">
+                                        <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Calculating operational costs...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================== -->
+                    <!-- VIEW 9: MODULE 3.8 REPORTS & ANALYTICS (ROI, FUEL EFFICIENCY, CSV/PDF EXPORT) -->
+                    <!-- ============================================================== -->
+                    <div id="viewAnalytics" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <h2 style="font-size: 1.6rem; font-weight: 800; color: #fff;">Executive Reports & Fleet Analytics</h2>
+                                <p style="color: var(--text-muted); font-size: 0.95rem;">Synthesizing Fuel Efficiency (KM/L), Fleet Utilization (%), Operational Expenditure, and dynamic Vehicle ROI.</p>
+                            </div>
+                            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                                <button type="button" class="btn" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 700; border: none; padding: 0.65rem 1.25rem; border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 14px rgba(16,185,129,0.3);" onclick="exportAnalyticsCSV()">
+                                    <span>📥 Export Analytics Report (.CSV)</span>
+                                </button>
+                                <button type="button" class="btn" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 700; border: 1px solid rgba(56,189,248,0.35); padding: 0.65rem 1.25rem; border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" onclick="exportAnalyticsPDF()">
+                                    <span>📄 Export / Print Executive Report (.PDF)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 4 EXECUTIVE ANALYTICAL KPI BADGES -->
+                        <div class="driver-kpi-badge-grid">
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Fleet Utilization Rate</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #38bdf8;">📈</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #38bdf8;" id="aKpiUtil">0%</div>
+                                <div class="driver-kpi-sub">Active & On Trip vehicles</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Avg Fuel Efficiency</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #10b981;">🍃</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #10b981;" id="aKpiEfficiency">0 KM/L</div>
+                                <div class="driver-kpi-sub">Distance traveled / Liters</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Total Operational Cost</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #f43f5e;">💎</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #f43f5e;" id="aKpiOpCost">$0</div>
+                                <div class="driver-kpi-sub">Fuel + Shop Maintenance</div>
+                            </div>
+                            <div class="driver-kpi-badge">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Fleet Average ROI</span>
+                                    <div class="driver-kpi-icon-badge" style="color: #a855f7;">🏆</div>
+                                </div>
+                                <div class="driver-kpi-val" style="color: #a855f7;" id="aKpiROI">0%</div>
+                                <div class="driver-kpi-sub">(Revenue - OpCost) / AcqCost</div>
+                            </div>
+                        </div>
+
+                        <!-- INTERACTIVE ANALYTICS VISUALIZATIONS -->
+                        <div class="analytics-charts-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                            <div class="panel-card" style="padding: 1.25rem;">
+                                <div class="panel-header" style="margin-bottom: 1rem;">
+                                    <span class="panel-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 800; color: #fff;">
+                                        🏆 VEHICLE ROI & FINANCIAL BREAKDOWN
+                                    </span>
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">Revenue vs OpCost vs Net Profit ($)</span>
+                                </div>
+                                <div style="height: 260px; position: relative;">
+                                    <canvas id="analyticsROIChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="panel-card" style="padding: 1.25rem;">
+                                <div class="panel-header" style="margin-bottom: 1rem;">
+                                    <span class="panel-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 800; color: #fff;">
+                                        🍃 FUEL EFFICIENCY & OPERATING COST TELEMETRY
+                                    </span>
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">Cost/KM & Efficiency per Vehicle</span>
+                                </div>
+                                <div style="height: 260px; position: relative;">
+                                    <canvas id="analyticsEfficiencyChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="crud-header-bar">
+                            <div class="view-toggle-group">
+                                <button type="button" id="btnAnalyticsCardsToggle" class="btn-view-toggle active" onclick="switchAnalyticsTab('cards')">📇 Vehicle ROI & Performance Cards</button>
+                                <button type="button" id="btnAnalyticsTableToggle" class="btn-view-toggle" onclick="switchAnalyticsTab('table')">📋 Comprehensive Analytics Table</button>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 0.85rem;">
+                                Formula: <code style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #fff;">ROI = [Revenue - (Maintenance + Fuel)] / Acquisition Cost</code>
+                            </div>
+                        </div>
+
+                        <div id="analyticsCardsView">
+                            <div id="analyticsCardsGrid" class="driver-cards-grid"></div>
+                        </div>
+
+                        <div id="analyticsTableView" style="display: none;">
+                            <div class="crud-table-card">
+                                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); font-weight: 700; color: #fff;">
+                                    📋 Comprehensive Fleet Master Analytical Ledger
+                                </div>
+                                <table class="crud-table">
+                                    <thead>
+                                        <tr>
+                                            <th>VEHICLE REG</th>
+                                            <th>MODEL & TYPE</th>
+                                            <th>ACQUISITION COST ($)</th>
+                                            <th>DISTANCE (KM)</th>
+                                            <th>FUEL EFFICIENCY (KM/L)</th>
+                                            <th>OPERATIONAL COST ($)</th>
+                                            <th>REVENUE ($)</th>
+                                            <th>NET PROFIT ($)</th>
+                                            <th>VEHICLE ROI (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="analyticsTableBody">
+                                        <tr><td colspan="9" style="text-align: center; color: var(--text-muted);">Loading fleet analytics...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================== -->
+                    <!-- VIEW 10: RBAC SECURITY INSPECTOR & ROLE MATRIX -->
+                    <!-- ============================================================== -->
+                    <div id="viewRbac" style="display: none;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 1.6rem; font-weight: 800; color: #fff;">🛡️ Role-Based Access Control (RBAC) Security Inspector</h2>
+                            <p style="color: var(--text-muted); font-size: 0.95rem;">Interactive enforcement of user roles across Fleet Manager, Driver, Safety Officer, and Financial Analyst.</p>
+                        </div>
+
+                        <!-- 4 EXECUTIVE ROLE PERSONA CARDS -->
+                        <div class="driver-kpi-badge-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+                            <div class="driver-kpi-badge" id="rbacCardManager" style="border-left: 4px solid #38bdf8;">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Executive Leadership</span>
+                                    <span class="status-pill pill-completed">Full CRUD</span>
+                                </div>
+                                <div style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 0.35rem;">👔 Fleet Manager</div>
+                                <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 1rem; line-height: 1.4;">
+                                    Oversees fleet assets, maintenance, vehicle lifecycle, and operational efficiency.
+                                </div>
+                                <button type="button" class="btn" style="width: 100%; background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); font-weight: 700; padding: 0.55rem; border-radius: var(--radius-sm); cursor: pointer;" onclick="switchActiveRole('Fleet Manager')">
+                                    <span>⚡ Switch to Fleet Manager</span>
+                                </button>
+                            </div>
+
+                            <div class="driver-kpi-badge" id="rbacCardDriver" style="border-left: 4px solid #f59e0b;">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Field Operations</span>
+                                    <span class="status-pill pill-ontrip">Dispatch Access</span>
+                                </div>
+                                <div style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 0.35rem;">🚚 Driver</div>
+                                <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 1rem; line-height: 1.4;">
+                                    Creates trips, assigns vehicles and drivers, and monitors active deliveries.
+                                </div>
+                                <button type="button" class="btn" style="width: 100%; background: rgba(245,158,11,0.2); color: #f59e0b; border: 1px solid rgba(245,158,11,0.4); font-weight: 700; padding: 0.55rem; border-radius: var(--radius-sm); cursor: pointer;" onclick="switchActiveRole('Driver')">
+                                    <span>⚡ Switch to Driver</span>
+                                </button>
+                            </div>
+
+                            <div class="driver-kpi-badge" id="rbacCardSafety" style="border-left: 4px solid #10b981;">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Compliance & Auditing</span>
+                                    <span class="status-pill pill-completed">Driver Roster CRUD</span>
+                                </div>
+                                <div style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 0.35rem;">🛡️ Safety Officer</div>
+                                <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 1rem; line-height: 1.4;">
+                                    Ensures driver compliance, tracks license validity, and monitors safety scores.
+                                </div>
+                                <button type="button" class="btn" style="width: 100%; background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid rgba(16,185,129,0.4); font-weight: 700; padding: 0.55rem; border-radius: var(--radius-sm); cursor: pointer;" onclick="switchActiveRole('Safety Officer')">
+                                    <span>⚡ Switch to Safety Officer</span>
+                                </button>
+                            </div>
+
+                            <div class="driver-kpi-badge" id="rbacCardFinance" style="border-left: 4px solid #a855f7;">
+                                <div class="driver-kpi-top">
+                                    <span class="driver-kpi-label">Corporate Finance</span>
+                                    <span class="status-pill pill-draft">Financial Audit</span>
+                                </div>
+                                <div style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 0.35rem;">📊 Financial Analyst</div>
+                                <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 1rem; line-height: 1.4;">
+                                    Reviews operational expenses, fuel consumption, maintenance costs, and profitability.
+                                </div>
+                                <button type="button" class="btn" style="width: 100%; background: rgba(168,85,247,0.2); color: #a855f7; border: 1px solid rgba(168,85,247,0.4); font-weight: 700; padding: 0.55rem; border-radius: var(--radius-sm); cursor: pointer;" onclick="switchActiveRole('Financial Analyst')">
+                                    <span>⚡ Switch to Financial Analyst</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- PERMISSION MATRIX TABLE -->
+                        <div class="crud-table-card">
+                            <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); font-weight: 700; color: #fff;">
+                                🔐 System-Wide Role Permission Enforcement Matrix
+                            </div>
+                            <table class="crud-table">
+                                <thead>
+                                    <tr>
+                                        <th>SYSTEM MODULE / DOMAIN</th>
+                                        <th>👔 FLEET MANAGER</th>
+                                        <th>🚚 DRIVER (DISPATCHER)</th>
+                                        <th>🛡️ SAFETY OFFICER</th>
+                                        <th>📊 FINANCIAL ANALYST</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="font-weight: 700; color: #fff;">Dashboard & Fleet Status Hub</td>
+                                        <td><span class="status-pill pill-completed">Full Access</span></td>
+                                        <td><span class="status-pill pill-completed">Full Access</span></td>
+                                        <td><span class="status-pill pill-completed">Full Access</span></td>
+                                        <td><span class="status-pill pill-completed">Full Access</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 700; color: #fff;">3.3 Vehicle Registry (CRUD & Status)</td>
+                                        <td><span class="status-pill pill-completed">Full CRUD</span></td>
+                                        <td><span class="status-pill pill-ontrip">View Pool Only</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                        <td><span class="status-pill pill-ontrip">View Acquisition Costs</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 700; color: #fff;">3.4 Driver Management (Compliance & Licenses)</td>
+                                        <td><span class="status-pill pill-completed">Full CRUD</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                        <td><span class="status-pill pill-completed">Full Compliance CRUD</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 700; color: #fff;">3.5 Trip Management & Dispatching</td>
+                                        <td><span class="status-pill pill-completed">Full CRUD & Dispatch</span></td>
+                                        <td><span class="status-pill pill-completed">Create Trips & Monitor</span></td>
+                                        <td><span class="status-pill pill-ontrip">Monitor Deliveries</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 700; color: #fff;">3.6 Maintenance Log & Shop Interlocks</td>
+                                        <td><span class="status-pill pill-completed">Full CRUD & Shop Control</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                        <td><span class="status-pill pill-ontrip">View Expense Audit</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 700; color: #fff;">3.7 Fuel & Expense Management</td>
+                                        <td><span class="status-pill pill-completed">Full CRUD</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                        <td><span class="status-pill pill-completed">Full Expense CRUD</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 700; color: #fff;">3.8 Executive Reports, Analytics & ROI</td>
+                                        <td><span class="status-pill pill-completed">Full Access & Export</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                        <td><span class="status-pill pill-completed">Full Access & Export</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 700; color: #fff;">System Master Registries (Settings)</td>
+                                        <td><span class="status-pill pill-completed">Full CRUD</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                        <td><span class="status-pill pill-draft">Restricted</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================== -->
+                    <!-- VIEW 11: MASTER REGISTRIES CRUD (VEHICLE TYPES, REGIONS, EXPENSE TYPES) -->
+                    <!-- ============================================================== -->
+                    <div id="viewSettings" style="display: none;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 1.6rem; font-weight: 800; color: #fff;">Master System Registries</h2>
+                            <p style="color: var(--text-muted); font-size: 0.95rem;">Configure master reference lists for Vehicle Types, Operational Regions, and Expense Categories.</p>
+                        </div>
+
+                        <div class="registry-subtabs">
+                            <button type="button" class="registry-subtab-btn active" id="subtabTypesBtn" onclick="switchRegistryTab('types')">🚛 Vehicle Types</button>
+                            <button type="button" class="registry-subtab-btn" id="subtabRegionsBtn" onclick="switchRegistryTab('regions')">📍 Regions & Hubs</button>
+                            <button type="button" class="registry-subtab-btn" id="subtabExpenseBtn" onclick="switchRegistryTab('expenses')">💳 Expense Types</button>
+                        </div>
+
+                        <!-- SUBVIEW 1: VEHICLE TYPES -->
+                        <div id="registryTypesView">
+                            <div class="crud-header-bar">
+                                <div class="crud-filter-group">
+                                    <input type="text" id="typeSearchInput" class="crud-search-input" placeholder="🔍 Search Vehicle Types..." oninput="filterVehicleTypes()">
+                                </div>
+                                <button type="button" class="btn-crud-add" onclick="openMasterModal('type')">
+                                    <span>+ Add Vehicle Type</span>
+                                </button>
+                            </div>
+                            <div class="crud-table-card">
+                                <table class="crud-table">
+                                    <thead>
+                                        <tr>
+                                            <th>TYPE NAME</th>
+                                            <th>DEFAULT CAPACITY (KG)</th>
+                                            <th>DESCRIPTION</th>
+                                            <th>ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="typesTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- SUBVIEW 2: REGIONS -->
+                        <div id="registryRegionsView" style="display: none;">
+                            <div class="crud-header-bar">
+                                <div class="crud-filter-group">
+                                    <input type="text" id="regionSearchInput" class="crud-search-input" placeholder="🔍 Search Regions..." oninput="filterRegions()">
+                                </div>
+                                <button type="button" class="btn-crud-add" onclick="openMasterModal('region')">
+                                    <span>+ Add Region</span>
+                                </button>
+                            </div>
+                            <div class="crud-table-card">
+                                <table class="crud-table">
+                                    <thead>
+                                        <tr>
+                                            <th>REGION NAME</th>
+                                            <th>CODE</th>
+                                            <th>HEADQUARTERS</th>
+                                            <th>ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="regionsTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- SUBVIEW 3: EXPENSE TYPES -->
+                        <div id="registryExpensesView" style="display: none;">
+                            <div class="crud-header-bar">
+                                <div class="crud-filter-group">
+                                    <input type="text" id="expenseSearchInput" class="crud-search-input" placeholder="🔍 Search Expense Categories..." oninput="filterExpenseTypes()">
+                                </div>
+                                <button type="button" class="btn-crud-add" onclick="openMasterModal('expense')">
+                                    <span>+ Add Expense Type</span>
+                                </button>
+                            </div>
+                            <div class="crud-table-card">
+                                <table class="crud-table">
+                                    <thead>
+                                        <tr>
+                                            <th>CATEGORY NAME</th>
+                                            <th>TAX DEDUCTIBLE</th>
+                                            <th>DESCRIPTION</th>
+                                            <th>ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="expensesTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </section>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- UNIVERSAL CRUD FORM MODAL -->
+    <div id="crudModal" class="crud-modal-backdrop">
+        <div class="crud-modal-box">
+            <div class="crud-modal-header">
+                <h3 id="crudModalTitle" class="crud-modal-title">Register Item</h3>
+                <button type="button" class="btn-close-modal" onclick="closeCrudModal()">×</button>
+            </div>
+            <div id="crudModalError" class="alert alert-error" style="margin-bottom: 1rem; display: none;"></div>
+            <form id="crudModalForm" onsubmit="handleCrudSubmit(event)">
+                <div id="crudFormFields" class="crud-form-grid"></div>
+                <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                    <button type="button" class="btn" style="background: rgba(255,255,255,0.08); color: #fff;" onclick="closeCrudModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="crudSubmitBtn">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- UNIVERSAL VIEW DETAILS INSPECTION MODAL -->
+    <div id="viewDetailModal" class="crud-modal-backdrop">
+        <div class="crud-modal-box">
+            <div class="crud-modal-header">
+                <h3 id="viewDetailTitle" class="crud-modal-title">Record Details</h3>
+                <button type="button" class="btn-close-modal" onclick="closeViewDetailModal()">×</button>
+            </div>
+            <div id="viewDetailBody" style="line-height: 1.8; color: #f8fafc;"></div>
+            <div style="margin-top: 1.5rem;">
+                <button type="button" class="btn btn-primary" onclick="closeViewDetailModal()">Close Details</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Live API Response -->
+    <div id="apiResponseModal">
+        <div class="modal-content glass">
+            <h3 id="modalTitle" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 0.75rem;">Backend RBAC Verification</h3>
+            <p id="modalBody" style="color: var(--text-main); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;"></p>
+            <div style="background: rgba(0,0,0,0.5); padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.85rem; color: #a855f7; margin-bottom: 1.5rem;" id="modalRawJson"></div>
+            <button type="button" class="btn btn-primary" onclick="closeModal()">Dismiss Notification</button>
+        </div>
+    </div>
+
+    <!-- RBAC Security Access Denied Modal -->
+    <div id="rbacDeniedModal" class="crud-modal-backdrop">
+        <div class="crud-modal-box" style="border-left: 4px solid #f43f5e;">
+            <div class="crud-modal-header">
+                <h3 class="crud-modal-title" style="color: #f43f5e;">🛡️ RBAC Access Restricted</h3>
+                <button type="button" class="btn-close-modal" onclick="closeRbacDeniedModal()">×</button>
+            </div>
+            <div id="rbacDeniedBody" style="line-height: 1.6; color: #f8fafc; margin-bottom: 1.5rem;"></div>
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button type="button" class="btn-crud-cancel" onclick="closeRbacDeniedModal()">Close</button>
+                <button type="button" class="btn-crud-submit" id="btnRbacSwitchSuggested" onclick="switchActiveRole('Fleet Manager'); closeRbacDeniedModal();">Switch Role</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
