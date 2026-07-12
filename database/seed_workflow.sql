@@ -1,7 +1,7 @@
 USE fleetmaster_pro;
 
 -- =====================================================
--- ROLES
+-- ROLES 
 -- =====================================================
 
 INSERT IGNORE INTO roles(role_id, role_name, description)
