@@ -3,7 +3,7 @@ USE fleetmaster_pro;
 DELIMITER $$
 
 -- ===========================================================
--- Drop Existing Triggers
+-- Drop Existing Triggers 
 -- ===========================================================
 
 DROP TRIGGER IF EXISTS trg_validate_trip_before_insert$$
