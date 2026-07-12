@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TransitOps</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0d0d0d',
+                        panelbg: '#1a1a1a',
+                        bordercolor: '#333333',
+                        pill: {
+                            green: '#22c55e',
+                            blue: '#3b82f6',
+                            amber: '#d97706',
+                            red: '#ef4444',
+                            gray: '#6b7280'
+                        }
+                    },
+                    fontFamily: {
+                        sketch: ['Kalam', 'cursive'],
+                        sans: ['ui-sans-serif', 'system-ui', 'sans-serif'],
+                        mono: ['ui-monospace', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: white;
+            font-family: 'ui-sans-serif', 'system-ui', 'sans-serif';
+        }
+        .sketch-font {
+            font-family: 'Kalam', cursive;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d0d0d; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+
+        /* Pill status styles */
+        .pill {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: inline-block;
+            text-transform: uppercase;
+        }
+        .pill-Available, .pill-Completed, .pill-Active { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e; }
+        .pill-OnTrip, .pill-Dispatched, .pill-On.Trip { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; }
+        .pill-InShop, .pill-Pending, .pill-In.Shop { background-color: rgba(217, 119, 6, 0.2); color: #fbbf24; border: 1px solid #d97706; }
+        .pill-Retired, .pill-Cancelled, .pill-Suspended { background-color: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+        .pill-Draft, .pill-OffDuty, .pill-Off.Duty { background-color: rgba(107, 114, 128, 0.2); color: #9ca3af; border: 1px solid #6b7280; }
+
+        /* Excalidraw-like Borders for panels and inputs */
+        .sketch-border {
+            border: 1px solid #333;
+            border-radius: 6px;
+            /* slight asymmetry to look hand-drawn could go here */
+        }
+    </style>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- React Router DOM -->
+    <script crossorigin src="https://unpkg.com/react-router-dom@6/umd/react-router-dom.development.js"></script>
+    
+    <!-- Recharts -->
+    <script crossorigin src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+
+    <!-- Axios for API Calls -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <!-- Babel for in-browser JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel" src="/app.js"></script>
+    <script type="text/babel" src="/dashboard.js"></script>
+    <script type="text/babel" src="/vehicles.js"></script>
+    <script type="text/babel" src="/drivers.js"></script>
+    <script type="text/babel" src="/trips.js"></script>
+    <script type="text/babel" src="/maintenance.js"></script>
+    <script type="text/babel" src="/fuel.js"></script>
+    <script type="text/babel" src="/reports.js"></script>
+    <script type="text/babel" src="/settings.js"></script>
+    <script type="text/babel" src="/main.js"></script>
+</body>
+</html>
