@@ -8,7 +8,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ROLES
 -- ======================================================
 
-CREATE TABLE roles (
+CREATE TABLE roles ( 
     role_id INT AUTO_INCREMENT PRIMARY KEY,
     role_name ENUM(
         'Fleet Manager',
